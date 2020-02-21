@@ -31,11 +31,14 @@ namespace Moneta {
         public Gtk.ComboBox target_currency;
         public Gtk.Stack stack;
         public Gtk.Image aicon;
+        public Gtk.Button switch_currencies;
 
         public double avg;
         public double avg_history;
         public string source_iso;
         public string target_iso;
+
+        public bool switching = false;
 
         AppSettings settings;
 
@@ -83,6 +86,13 @@ namespace Moneta {
             label_result.set_halign(Gtk.Align.START);
             label_history = new Gtk.Label ("");
 
+            switch_currencies = new Gtk.Button();
+            switch_currencies.margin = 6;
+            var switch_currencies_image = new Gtk.Image();
+            switch_currencies_image.icon_size = Gtk.IconSize.SMALL_TOOLBAR;
+            switch_currencies_image.icon_name = "object-flip-horizontal-symbolic";
+            switch_currencies.image = switch_currencies_image;
+
             aicon = new Gtk.Image ();
             aicon.icon_size = Gtk.IconSize.SMALL_TOOLBAR;
 
@@ -91,7 +101,7 @@ namespace Moneta {
 
             var avg_grid = new Gtk.Grid ();
             avg_grid.margin_top = 0;
-            avg_grid.margin_start = 6;
+            avg_grid.margin_start = 12;
             avg_grid.column_spacing = 6;
             avg_grid.attach (aicon, 0, 0, 1, 1);
             avg_grid.attach (label_history, 1, 0, 1, 1);
@@ -103,7 +113,8 @@ namespace Moneta {
             grid.row_spacing = 6;
             grid.attach(icon, 0, 2, 1, 1);
             grid.attach(source_currency, 0, 1, 2, 1);
-            grid.attach(target_currency, 2, 1, 2, 1);
+            grid.attach(switch_currencies, 2, 1, 1, 1);
+            grid.attach(target_currency, 3, 1, 2, 1);
             grid.attach(label_result, 1, 2, 3, 2);
             grid.attach (avg_grid, 0, 4, 1, 1);
             grid.attach(label_info, 1, 4, 3, 2);
@@ -119,18 +130,15 @@ namespace Moneta {
             stack.show_all();
 
             source_currency.changed.connect(() => {
-                get_values();
-                set_labels();
+                update_data();
             });
 
             target_currency.changed.connect(() => {
-                get_values();
-                set_labels();
+                update_data();
             });
 
             Timeout.add_seconds(600,() => {
-                get_values();
-                set_labels();
+                update_data();
                 return true;
             });
 
@@ -152,6 +160,29 @@ namespace Moneta {
                 }
                 return false;
             });
+
+            switch_currencies.clicked.connect((e) => {
+                switch_currencies.sensitive = false;
+                source_currency.sensitive = false;
+                target_currency.sensitive = false;
+                switching = true;
+
+                var old_currency = source_currency.get_active();
+                source_currency.set_active(target_currency.get_active());
+                switching = false; // To fire next update
+                target_currency.set_active(old_currency);
+
+                switch_currencies.sensitive = true;
+                source_currency.sensitive = true;
+                target_currency.sensitive = true;
+            });
+        }
+
+        private void update_data () {
+            if (!switching) {
+                get_values();
+                set_labels();
+            }
         }
 
         public override bool delete_event (Gdk.EventAny event) {

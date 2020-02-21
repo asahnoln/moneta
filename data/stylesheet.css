@@ -31,3 +31,8 @@ cellview {
 .positive-icon {
     color: #68b723;
 }
+
+button {
+    background: @colorPrimary;
+    color: @textColorPrimary;
+}
